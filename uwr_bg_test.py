@@ -12,6 +12,7 @@ parser.add_argument('--ext', type=str, help='File extension for video files', de
 parser.add_argument('--clipsL', type=str, help='Number of clips left video is divided into', default='1')
 parser.add_argument('--clipsR', type=str, help='Number of clips right video is divided into', default='1')
 parser.add_argument('--algo', type=str, help='Background subtraction method (KNN, MOG2, GSOC).', default='MOG2')
+parser.add_argument('--delay', type=str, help='Frame number to start videos on.', default='1')
 parser.add_argument('-pauses', action='store_true', help='If this argument is given, the program will attempt to cut game pauses out')
 args = parser.parse_args()
 
@@ -61,8 +62,8 @@ rCap = cv.VideoCapture(cv.samples.findFileOrKeep(INPUT_PATH + rCapName))
 
 writer = cv.VideoWriter('out.mp4', cv.VideoWriter_fourcc(*'mp4v'), 30, (1920, 1080))
 
-lCap.set(1, 27500)
-rCap.set(1, 27500)
+lCap.set(1, int(args.delay))
+rCap.set(1, int(args.delay))
 
 if not lCap.isOpened():
     print('Unable to open: ' + args.L)
@@ -85,6 +86,9 @@ def score(mask):
 while True:
     ret, lFrameOrig = lCap.read()
     ret, rFrameOrig = rCap.read()
+
+    lFrameOrig = cv.UMat(lFrameOrig)
+    rFrameOrig = cv.UMat(rFrameOrig)
     if lFrameOrig is None:
         print('Trying to switch left clip')
         if curClipL < clipsL:
@@ -129,7 +133,7 @@ while True:
 
     if args.pauses and is_game_paused(lMask, rMask):
         frame = np.zeros(lFrameOrig.shape)
-    elif score(lMask) > score(rMask):
+    elif score(cv.UMat.get(lMask)) > score(cv.UMat.get(rMask)):
         frame = lFrameOrig
         writer.write(frame)
     else:

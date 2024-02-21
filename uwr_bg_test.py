@@ -3,8 +3,6 @@ import cv2 as cv
 import argparse
 import numpy as np
 
-INPUT_PATH = 'input/'
-
 parser = argparse.ArgumentParser(description='This program takes two input video streams of a UWR game and switches between the angles automatically')
 parser.add_argument('--L', type=str, help='Filename of left clips without extension', default='L')
 parser.add_argument('--R', type=str, help='Filename of right clips without extension', default='R')
@@ -13,8 +11,11 @@ parser.add_argument('--clipsL', type=str, help='Number of clips left video is di
 parser.add_argument('--clipsR', type=str, help='Number of clips right video is divided into', default='1')
 parser.add_argument('--algo', type=str, help='Background subtraction method (KNN, MOG2, GSOC).', default='MOG2')
 parser.add_argument('--delay', type=str, help='Frame number to start videos on.', default='1')
+parser.add_argument('--input', type=str, help='Name of the input folder containing the clips can be given here.', default='input')
 parser.add_argument('-pauses', action='store_true', help='If this argument is given, the program will attempt to cut game pauses out')
 args = parser.parse_args()
+
+INPUT_PATH = args.input + '/'
 
 cv.namedWindow('Frame', cv.WINDOW_NORMAL)
 cv.namedWindow('FG Mask Left', cv.WINDOW_NORMAL)
@@ -71,12 +72,13 @@ if not lCap.isOpened():
 if not rCap.isOpened():
     print('Unable to open: ' + args.R)
     exit(0)
+
 def is_game_paused(lMask, rMask):
     lowerHalfMeanR = rMask[rMask.shape[0]//2 :, :].mean()
     lowerHalfMeanL = lMask[lMask.shape[0]//2 :, :].mean()
     upperHalfMeanL = rMask[: rMask.shape[0]//2, :].mean()
     upperHalfMeanR = lMask[: lMask.shape[0]//2, :].mean()
-    return lowerHalfMeanL < 1 and lowerHalfMeanR < 1 and upperHalfMeanL < 40 and upperHalfMeanR < 40
+    return lowerHalfMeanL < 3 and lowerHalfMeanR < 3 and upperHalfMeanL < 35 and upperHalfMeanR < 35
 
 def score(mask):
     lowerHalfMean = mask[mask.shape[0]//2 :, :].mean()
@@ -87,8 +89,6 @@ while True:
     ret, lFrameOrig = lCap.read()
     ret, rFrameOrig = rCap.read()
 
-    lFrameOrig = cv.UMat(lFrameOrig)
-    rFrameOrig = cv.UMat(rFrameOrig)
     if lFrameOrig is None:
         print('Trying to switch left clip')
         if curClipL < clipsL:
@@ -133,7 +133,7 @@ while True:
 
     if args.pauses and is_game_paused(lMask, rMask):
         frame = np.zeros(lFrameOrig.shape)
-    elif score(cv.UMat.get(lMask)) > score(cv.UMat.get(rMask)):
+    elif score(lMask) > score(rMask):
         frame = lFrameOrig
         writer.write(frame)
     else:

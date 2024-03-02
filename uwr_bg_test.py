@@ -85,6 +85,11 @@ def score(mask):
     upperHalfMean = mask[: mask.shape[0]//2, :].mean()
     return 3*lowerHalfMean + upperHalfMean
 
+pauseframes = []
+angle = -1
+switch_allowed = True
+count = 0
+
 while True:
     ret, lFrameOrig = lCap.read()
     ret, rFrameOrig = rCap.read()
@@ -131,13 +136,41 @@ while True:
     lBG = lBackSub.getBackgroundImage()
     rBG = rBackSub.getBackgroundImage()
 
-    if args.pauses and is_game_paused(lMask, rMask):
-        frame = np.zeros(lFrameOrig.shape)
-    elif score(lMask) > score(rMask):
-        frame = lFrameOrig
-        writer.write(frame)
+    count += 1
+    if not switch_allowed and count > 30:
+        switch_allowed = True
+
+    if score(lMask) > score(rMask):
+        if angle == 0:
+            frame = lFrameOrig
+        elif switch_allowed:
+            frame = lFrameOrig
+            angle = 0
+            switch_allowed = False
+            count = 0
+        else:
+            frame = rFrameOrig
     else:
-        frame = rFrameOrig
+        if angle == 1:
+            frame = rFrameOrig
+        elif switch_allowed:
+            frame = rFrameOrig
+            angle = 1
+            switch_allowed = False
+            count = 0
+        else:
+            frame = lFrameOrig
+
+    if args.pauses and is_game_paused(lMask, rMask):
+        pauseframes.append(frame)
+        if len(pauseframes) > 150: 
+            pauseframes.pop(0)
+        frame = np.zeros(lFrameOrig.shape)
+    else:
+        if len(pauseframes) > 0:
+            for i in range(len(pauseframes)):
+                writer.write(pauseframes[i])
+            pauseframes = []
         writer.write(frame)
     
     cv.imshow('Frame', frame)

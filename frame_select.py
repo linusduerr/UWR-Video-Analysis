@@ -38,8 +38,9 @@ for i in range(ANGLES):
     cv.namedWindow('BG ' + str(i), cv.WINDOW_NORMAL)
     cv.resizeWindow('Mask ' + str(i), 320, 180)
     cv.resizeWindow('In ' + str(i), 320, 225)
-    cv.resizeWindow('BG ' + str(i), 320, 180)
+    cv.resizeWindow('BG ' + str(i), 320, 225)
     cv.createTrackbar('Middle', 'In ' + str(i), 50, 100, nothing)
+    cv.createTrackbar('Learning Rate', 'BG ' + str(i), 2, 100, nothing)
 
 # Creates background subtractors for each angle
 if args.algo == 'MOG2':
@@ -98,6 +99,11 @@ while True:
     # Setting image split based on trackbars
     for i in range(ANGLES):
         middleFactors[i] = (cv.getTrackbarPos('Middle', 'In ' + str(i)) + 1) / 102
+        learningRates[i] = (cv.getTrackbarPos('Learning Rate', 'BG ' + str(i))) / 10000
+    
+    print("Learning Rates: ",end='')
+    for i in range(ANGLES):
+        print(str(i) + ': ' + str(learningRates[i]), end=', ')
 
     # Reading frames
     frames = [caps[i].read() for i in range(ANGLES)]
@@ -125,6 +131,7 @@ while True:
 
     # Calculate the highest scoring angle
     scores = np.array(score(masks, middleFactors))
+    print("Scores: ",end='')
     for i in range(ANGLES):
         print(str(i) + ': ' + str(round(scores[i])), end=', ')
     print('', end='\r')

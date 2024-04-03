@@ -172,6 +172,7 @@ while True:
     # Handles key presses
     keyboard = cv.waitKey(1)
     if keyboard == 'q' or keyboard == 27:
+        writer.release()
         break
     elif keyboard == 32:
         frameNum = caps[0].get(cv.CAP_PROP_POS_FRAMES)

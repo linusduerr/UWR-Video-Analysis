@@ -8,18 +8,20 @@ def nothing(x):
 
 # Input argument parsing
 parser = argparse.ArgumentParser(description='This program takes input video streams of a UWR game and switches between the angles automatically')
-parser.add_argument('--angles', type=int, help='Number of different angles to be analysed', default=2)
-parser.add_argument('--filename', type=str, help='Base file name without angle index and extension', default='')
-parser.add_argument('--ext', type=str, help='File extension for video files', default='.mp4')
-parser.add_argument('--algo', type=str, help='Background subtraction method (KNN, MOG2, GSOC).', default='MOG2')
-parser.add_argument('--delay', type=str, help='Frame number to start videos on.', default='1')
-parser.add_argument('--input', type=str, help='Name of the input folder containing the clips can be given here.', default='input')
+parser.add_argument('--angles', type=int, help='Number of different angles to be analysed (Default is 2)', default=2)
+parser.add_argument('--filename', type=str, help='Base file name without angle index and extension (Default is '')', default='')
+parser.add_argument('--ext', type=str, help='File extension for video files (Default is \'.mp4\')', default='.mp4')
+parser.add_argument('--algo', type=str, help='Background subtraction method (KNN, MOG2, GSOC) (Default is \'MOG2\')', default='MOG2')
+parser.add_argument('--delay', type=str, help='Frame number to start videos on (Default is 1)', default='1')
+parser.add_argument('--input', type=str, help='Name of the input folder containing the clips can be given here (Default is \'input\')', default='input')
+parser.add_argument('--fps', type=float, help='Framerate of input videos (Default is 30)', default=30)
 parser.add_argument('-pauses', action='store_true', help='If this argument is given, the program will attempt to cut game pauses out')
 args = parser.parse_args()
 
 # Constants
 INPUT_PATH = args.input + '/'
 ANGLES = args.angles
+FPS = args.fps
 MIN_WAIT = 60                       # Minimum number of frames between conecutive angle changes
 LOWER_WEIGHT = 3                    # Factor with which the lower part of the image is weighted (Upper is weighted with 1)
 LOWER_THRESH = 3                    # Threshold for the mean of the lower image below which a pause is detected
@@ -63,7 +65,7 @@ for i in range(ANGLES):
         exit(0)
 
 # Output video writer
-writer = cv.VideoWriter('out.mp4', cv.VideoWriter_fourcc(*'mp4v'), 30, (1920, 1080))
+writer = cv.VideoWriter('out.mp4', cv.VideoWriter_fourcc(*'mp4v'), FPS, (1920, 1080))
 
 # If a delay was given, this sets all video captures to the corresponding frame
 for i in range(ANGLES):

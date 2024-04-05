@@ -16,6 +16,7 @@ parser.add_argument('--delay', type=str, help='Frame number to start videos on (
 parser.add_argument('--input', type=str, help='Name of the input folder containing the clips can be given here (Default is \'input\')', default='input')
 parser.add_argument('--fps', type=float, help='Framerate of input videos (Default is 30)', default=30)
 parser.add_argument('-pauses', action='store_true', help='If this argument is given, the program will attempt to cut game pauses out')
+parser.add_argument('-equalize', action='store_true', help='If this argument is given, the brightness histogram is equalized on each input frame. This can help dealing with changing lighting')
 args = parser.parse_args()
 
 # Constants
@@ -119,6 +120,12 @@ while True:
     
     # Reducing size of frames to perform analysis
     smallFrames = [cv.resize(frames[i], (320, 180), interpolation=cv.INTER_LINEAR) for i in range(ANGLES)]
+    for i in range(ANGLES):
+        if args.equalize:
+            img_yuv = cv.cvtColor(smallFrames[i], cv.COLOR_BGR2YUV)
+            img_yuv[:,:,0] = cv.equalizeHist(img_yuv[:,:,0])
+            smallFrames[i] = cv.cvtColor(img_yuv, cv.COLOR_YUV2BGR)
+        smallFrames[i] = cv.GaussianBlur(smallFrames[i], (3,3),3,3)
 
     # Doing the background subtraction
     masks = [backSub[i].apply(smallFrames[i], learningRate=learningRates[i]) for i in range(ANGLES)]
